@@ -1,0 +1,70 @@
+"""Jalankan & bandingkan algoritma pencarian untuk penjadwalan kuliah.
+
+Contoh:
+    python main.py                       # dataset small, semua algoritma
+    python main.py --dataset medium      # dataset lebih besar
+    python main.py --algo astar          # hanya A*
+"""
+import argparse
+import json
+import os
+
+from data import DATASETS
+from problem import SchedulingProblem
+from uninformed import bfs, dfs, ucs
+from informed import greedy, a_star
+
+ALGOS = {"bfs": bfs, "dfs": dfs, "ucs": ucs, "greedy": greedy, "astar": a_star}
+
+
+def print_table(results):
+    print(f"\n{'Algoritma':<10}{'Tipe':<12}{'Status':<13}{'Biaya':>7}{'Expanded':>10}{'Generated':>11}{'Waktu(s)':>10}")
+    print("-" * 73)
+    for r in results:
+        tipe = "informed" if r.informed else "uninformed"
+        cost = "-" if r.cost is None else r.cost
+        print(f"{r.name:<10}{tipe:<12}{r.status:<13}{cost:>7}{r.expanded:>10}{r.generated:>11}{r.seconds:>10.3f}")
+
+
+def print_schedule(rows):
+    print(f"\n{'Hari':<5}{'Jam':<7}{'Ruang':<7}{'Kode':<7}{'Mata Kuliah':<24}{'Dosen':<11}{'Kelas'}")
+    print("-" * 70)
+    for r in sorted(rows, key=lambda r: (["Sen", "Sel", "Rab", "Kam", "Jum"].index(r["day"]), r["hour"])):
+        print(f"{r['day']:<5}{r['hour']:<7}{r['room']:<7}{r['code']:<7}{r['name']:<24}{r['lecturer']:<11}{r['group']}")
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Search algorithm: penjadwalan kuliah")
+    ap.add_argument("--dataset", choices=DATASETS, default="small")
+    ap.add_argument("--algo", choices=["all", *ALGOS], default="all")
+    ap.add_argument("--max-nodes", type=int, default=200_000,
+                    help="batas node yang boleh di-expand per algoritma")
+    ap.add_argument("--out", default=os.path.join(os.path.dirname(__file__), "output", "schedule.json"))
+    args = ap.parse_args()
+
+    problem = SchedulingProblem(DATASETS[args.dataset]())
+    names = list(ALGOS) if args.algo == "all" else [args.algo]
+    print(f"Dataset: {args.dataset} | {problem.n} mata kuliah, {len(problem.rooms)} ruangan, "
+          f"{len(problem.slots)} slot waktu | batas node: {args.max_nodes:,}")
+
+    results = [ALGOS[n](problem, args.max_nodes) for n in names]
+    print_table(results)
+
+    solved = [r for r in results if r.status == "OK"]
+    if not solved:
+        print("\nTidak ada algoritma yang menemukan solusi (coba naikkan --max-nodes).")
+        return
+    best = min(solved, key=lambda r: r.cost)
+    rows = problem.decode(best.state)
+    print(f"\nJadwal terbaik dari {best.name} (biaya {best.cost}):")
+    print_schedule(rows)
+
+    os.makedirs(os.path.dirname(args.out), exist_ok=True)
+    with open(args.out, "w", encoding="utf-8") as f:
+        json.dump({"dataset": args.dataset, "algorithm": best.name, "cost": best.cost, "schedule": rows},
+                  f, indent=2, ensure_ascii=False)
+    print(f"\nJadwal disimpan ke {args.out} (bisa dipakai expert-system).")
+
+
+if __name__ == "__main__":
+    main()
