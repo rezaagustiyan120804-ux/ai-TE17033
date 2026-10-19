@@ -1,0 +1,71 @@
+Dataset penjadwalan kuliah. Tambah/ubah data di sini untuk eksperimen.
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class Course:
+    code: str
+    name: str
+    lecturer: str
+    group: str            # kelas mahasiswa, mis. "TE-3A"
+    students: int
+    is_lab: bool = False
+    preferred_days: tuple = ()   # kosong = tidak ada preferensi
+
+
+@dataclass(frozen=True)
+class Room:
+    name: str
+    capacity: int
+    is_lab: bool = False
+
+
+@dataclass
+class Dataset:
+    name: str
+    days: list
+    hours: list
+    rooms: list
+    courses: list
+
+
+def small():
+    """5 mata kuliah: cukup kecil agar BFS/UCS masih bisa selesai."""
+    return Dataset(
+        name="small",
+        days=["Sen", "Sel"],
+        hours=["07:00", "09:00", "11:00"],
+        rooms=[Room("R101", 40), Room("R102", 30), Room("LAB1", 30, True)],
+        courses=[
+            Course("AI101", "Kecerdasan Buatan", "Dr. Andi", "TE-3A", 35, False, ("Sen",)),
+            Course("DB201", "Basis Data", "Bu Sari", "TE-3A", 30, False, ("Sen",)),
+            Course("PR301", "Praktikum Jaringan", "Pak Budi", "TE-3A", 25, True, ("Sen",)),
+            Course("MK102", "Matematika Diskrit", "Dr. Andi", "TE-3B", 38, False, ("Sen",)),
+            Course("OS202", "Sistem Operasi", "Bu Sari", "TE-3B", 28, False, ("Sen",)),
+        ],
+    )
+
+
+def medium():
+    """9 mata kuliah dan 5 hari: BFS/UCS akan kewalahan, A* tetap cepat."""
+    return Dataset(
+        name="medium",
+        days=["Sen", "Sel", "Rab", "Kam", "Jum"],
+        hours=["07:00", "09:00", "11:00", "13:00", "15:00"],
+        rooms=[Room("R101", 40), Room("R102", 30), Room("R103", 60),
+               Room("LAB1", 30, True), Room("LAB2", 35, True)],
+        courses=[
+            Course("AI101", "Kecerdasan Buatan", "Dr. Andi", "TE-3A", 55, False, ("Sen",)),
+            Course("AI102", "Praktikum KB", "Dr. Andi", "TE-3A", 28, True, ("Sen",)),
+            Course("DB201", "Basis Data", "Bu Sari", "TE-3A", 38, False, ("Sen",)),
+            Course("DB202", "Praktikum Basis Data", "Bu Sari", "TE-3A", 30, True, ("Sen",)),
+            Course("MK102", "Matematika Diskrit", "Pak Budi", "TE-3B", 58, False, ("Sen",)),
+            Course("OS202", "Sistem Operasi", "Bu Rina", "TE-3B", 40, False, ("Sen", "Sel")),
+            Course("JK301", "Jaringan Komputer", "Pak Budi", "TE-3B", 33, False, ("Sen",)),
+            Course("PR301", "Praktikum Jaringan", "Bu Rina", "TE-3B", 32, True, ("Sen", "Sel")),
+            Course("ET401", "Etika Profesi", "Bu Sari", "TE-3B", 36, False, ("Jum",)),
+        ],
+    )
+
+
+DATASETS = {"small": small, "medium": medium}
